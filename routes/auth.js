@@ -44,4 +44,61 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// new account 
+// POST /api/newacc
+router.post('/newacc', async (req, res) => {
+  try {
+    const { firstname, sirname, email, password, role, class_name } = req.body;
+
+    // --- 1️⃣ Validate input
+    if (!firstname || !sirname || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "All required fields must be filled",
+      });
+    }
+
+    // --- 2️⃣ Check if user already exists
+    const [existing] = await db.query(`SELECT * FROM users WHERE email = ?`, [email]);
+    if (existing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists. Try another email!",
+      });
+    }
+
+    // --- 3️⃣ Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // --- 4️⃣ Insert new user
+    const insertQuery = `
+      INSERT INTO users (firstname, sirname, email, password, role, class_name)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    await db.query(insertQuery, [
+      firstname,
+      sirname,
+      email,
+      hashedPassword,
+      role,
+      class_name || null, // class_name only applies for students
+    ]);
+
+    // --- 5️⃣ Success response
+    return res.status(201).json({
+      success: true,
+      message: `${role} account for ${firstname} ${sirname} created successfully ✅`,
+    });
+
+  } catch (error) {
+    console.error("Error creating account:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while creating account",
+      error: error.message,
+    });
+  }
+});
+
+
 module.exports = router;
