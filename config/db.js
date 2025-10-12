@@ -1,24 +1,29 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
-const url = require('url');
 
 const dbUrl = process.env.DATABASE_URL;
 const params = new URL(dbUrl);
 
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: params.hostname,
   user: params.username,
   password: params.password,
   database: params.pathname.replace('/', ''),
-  port: params.port
+  port: params.port,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect((err) => {
-  if (err) {
+// Test connection
+(async () => {
+  try {
+    const connection = await db.getConnection();
+    console.log('Connected to Railway MySQL');
+    connection.release();
+  } catch (err) {
     console.error('Database connection failed:', err);
-    return;
   }
-  console.log('Connected to Railway MySQL');
-});
+})();
 
 module.exports = db;
