@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const router = express.Router();
 
+//admin login api
+
 router.post('/login', async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -44,21 +46,21 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// new account 
-// POST /api/newacc
+// new account api
+
 router.post('/newacc', async (req, res) => {
   try {
-    const { firstname, sirname, email, password, role, class_name } = req.body;
+    const { username, email, password, role, class_name } = req.body;
 
-    // --- 1️⃣ Validate input
-    if (!firstname || !sirname || !email || !password || !role) {
+    // ---Validate input
+    if (!username || !email || !password || !role) {
       return res.status(400).json({
         success: false,
         message: "All required fields must be filled",
       });
     }
 
-    // --- 2️⃣ Check if user already exists
+    // --- Check if user already exists
     const [existing] = await db.query(`SELECT * FROM users WHERE email = ?`, [email]);
     if (existing.length > 0) {
       return res.status(400).json({
@@ -67,27 +69,26 @@ router.post('/newacc', async (req, res) => {
       });
     }
 
-    // --- 3️⃣ Hash password
+    // ---Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // --- 4️⃣ Insert new user
+    // ---Insert new user
     const insertQuery = `
-      INSERT INTO users (firstname, sirname, email, password, role, class_name)
+      INSERT INTO users (username, email, password, role, class_name)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
     await db.query(insertQuery, [
-      firstname,
-      sirname,
+      username,
       email,
       hashedPassword,
       role,
-      class_name || null, // class_name only applies for students
+      class_name || null, 
     ]);
 
-    // --- 5️⃣ Success response
+    // --- Success response
     return res.status(201).json({
       success: true,
-      message: `${role} account for ${firstname} ${sirname} created successfully ✅`,
+      message: `${role} account for ${username} created successfully`,
     });
 
   } catch (error) {
