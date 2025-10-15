@@ -44,7 +44,7 @@ router.post('/new', upload.single('document'), async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Assignment created successfully',
+      message: 'Assignment has been created successfully',
       assignment: {
         id: result.insertId,
         title,
