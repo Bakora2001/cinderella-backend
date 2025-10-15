@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const app = express();
 
 // GET all users
 router.get('/getallusers', async (req, res) => {
   try {
     // Fetch all users from MySQL
     const [rows] = await db.query(
-      'SELECT id, username, email, role, class FROM users ORDER BY id DESC'
+      'SELECT id, username, email, role, class_name FROM users ORDER BY id DESC'
     );
 
     if (rows.length === 0) {
