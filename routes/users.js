@@ -7,7 +7,7 @@ router.get('/getallusers', async (req, res) => {
   try {
     // Fetch all users from MySQL
     const [rows] = await db.query(
-      'SELECT id, firstname, sirname, email, role, class FROM users ORDER BY id DESC'
+      'SELECT id, username, email, role, class FROM users ORDER BY id DESC'
     );
 
     if (rows.length === 0) {
@@ -33,7 +33,7 @@ router.get('/getallusers', async (req, res) => {
 // ✅ UPDATE user info
 router.put('/edituserdata:id', async (req, res) => {
   const { id } = req.params;
-  const { firstname, sirname, email, role, class: studentClass } = req.body;
+  const { username, email, role, class: studentClass } = req.body;
 
   try {
     // Check if user exists
@@ -45,9 +45,9 @@ router.put('/edituserdata:id', async (req, res) => {
     // Update user info
     await db.query(
       `UPDATE users 
-       SET firstname = ?, sirname = ?, email = ?, role = ?, class = ? 
+       SET username = ?, email = ?, role = ?, class = ? 
        WHERE id = ?`,
-      [firstname, sirname, email, role, studentClass || null, id]
+      [username, email, role, studentClass || null, id]
     );
 
     res.status(200).json({
