@@ -211,7 +211,7 @@ router.post('/newacc', async (req, res) => {
     if (existing.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "User with this email already exists. Please use another email.",
+        message: "User with the email already exists. Please use another email.",
       });
     }
 
