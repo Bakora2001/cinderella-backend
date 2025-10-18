@@ -32,9 +32,9 @@ router.get('/getallusers', async (req, res) => {
 });
 
 // ✅ UPDATE user info
-router.put('/edituserdata:id', async (req, res) => {
+router.put('/edituserdata/:id', async (req, res) => {
   const { id } = req.params;
-  const { username, email, role, class: studentClass } = req.body;
+  const { username, email, role, class_name: studentClass } = req.body;
 
   try {
     // Check if user exists
@@ -46,7 +46,7 @@ router.put('/edituserdata:id', async (req, res) => {
     // Update user info
     await db.query(
       `UPDATE users 
-       SET username = ?, email = ?, role = ?, class = ? 
+       SET username = ?, email = ?, role = ?, class_name = ? 
        WHERE id = ?`,
       [username, email, role, studentClass || null, id]
     );
@@ -66,9 +66,9 @@ router.put('/edituserdata:id', async (req, res) => {
   }
 });
 
-//deketing user api (incase of problems change router name like /api/uers...)
+//deleting user api (incase of problems change router name like /api/users...)
 
-router.delete('deleteuser/:id', async (req, res) => {
+router.delete('/deleteuser/:id', async (req, res) => {
   const { id } = req.params;
   const { role } = req.body; // We'll check the role of the logged-in user
 

@@ -9,6 +9,21 @@ if (!global.activeUsers) {
   global.activeUsers = [];
 }
 
+const verifyToken = (req, res, next) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+    req.user = decoded; // Attaches user info (id, email, role, username) to req
+    next();
+  } catch (error) {
+    console.error('Token verification error:', error.message);
+    res.status(403).json({ success: false, message: 'Invalid token' });
+  }
+};
+
 // Login API
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -298,3 +313,4 @@ router.get('/users/:id', async (req, res) => {
 });
 
 module.exports = router;
+router.verifyToken = verifyToken; 

@@ -1,13 +1,22 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const db = require('../config/db');
+const authRoutes = require('./auth'); // Destructure verifyToken
 const router = express.Router();
+const verifyToken = authRoutes.verifyToken;
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, '../uploads/assignments');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // File upload setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/assignments'); // make sure this folder exists
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + '-' + file.originalname;
@@ -18,8 +27,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // 📘 Create New Assignment
-router.post('/new', upload.single('document'), async (req, res) => {
+router.post('/new', verifyToken, upload.single('document'), async (req, res) => {
   try {
+    console.log('Request body:', req.body); // Debug: Log incoming data
+    console.log('File:', req.file); // Debug: Log file details
+
     const { title, description, instructions, class_name, due_date } = req.body;
 
     // Validate required fields
@@ -40,7 +52,7 @@ router.post('/new', upload.single('document'), async (req, res) => {
       [title, description, instructions, class_name, due_date, documentPath]
     );
 
-    console.log('Insert result:', result);
+    console.log('Insert result:', result); // Debug: Log DB result
 
     res.status(201).json({
       success: true,
@@ -54,11 +66,9 @@ router.post('/new', upload.single('document'), async (req, res) => {
         due_date,
         document_path: documentPath
       }
-
     });
-
   } catch (error) {
-    console.error('Error creating assignment:', error);
+    console.error('Error creating assignment:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'Server error while creating assignment',
