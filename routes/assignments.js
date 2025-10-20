@@ -29,11 +29,11 @@ const upload = multer({ storage });
 // 📘 Create New Assignment
 router.post('/new', verifyToken, upload.single('document'), async (req, res) => {
   try {
-    console.log('Request body:', req.body); // Debug: Log incoming data
-    console.log('File:', req.file); // Debug: Log file details
+    console.log('Request body:', req.body); 
+    console.log('File:', req.file); 
 
-    const { title, description, instructions, class_name, due_date } = req.body;
-
+    const { teacherId, title, description, instructions, class_name, due_date} = req.body;
+    const teacher_id = teacherId;
     // Validate required fields
     if (!title || !class_name || !due_date) {
       return res.status(400).json({
@@ -43,28 +43,29 @@ router.post('/new', verifyToken, upload.single('document'), async (req, res) => 
     }
 
     // Handle optional file upload
-    const documentPath = req.file ? req.file.path : null;
+    const documentPath = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Insert into DB
     const [result] = await db.query(
-      `INSERT INTO assignments (title, description, instructions, class_name, due_date, document_path)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [title, description, instructions, class_name, due_date, documentPath]
+      `INSERT INTO assignments (teacher_id, title, description, instructions, class_name, due_date, document_path)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [teacher_id, title, description, instructions, class_name, due_date, documentPath]
     );
 
-    console.log('Insert result:', result); // Debug: Log DB result
+    console.log('Insert result:', result); 
 
     res.status(201).json({
       success: true,
       message: 'Assignment has been created successfully',
       assignment: {
         id: result.insertId,
+        teacher_id,
         title,
         description,
         instructions,
         class_name,
         due_date,
-        document_path: documentPath
+        document_path: documentPath,
       }
     });
   } catch (error) {
@@ -76,5 +77,39 @@ router.post('/new', verifyToken, upload.single('document'), async (req, res) => 
     });
   }
 });
+
+// Get Assignments for a Specific Teacher
+router.get('/teacher/:teacher_id', verifyToken, async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+
+    if (!teacherId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Teacher ID is required',
+      });
+    }
+
+    // Query the DB for assignments created by this teacher
+    const [rows] = await db.query(
+      'SELECT * FROM assignments WHERE teacher_id = ? ORDER BY created_at DESC',
+      [teacherId]
+    );
+
+    res.status(200).json({
+      success: true,
+      count: rows.length,
+      assignments: rows,
+    });
+  } catch (error) {
+    console.error('Error fetching assignments for teacher:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching assignments',
+      error: error.message,
+    });
+  }
+});
+
 
 module.exports = router;
