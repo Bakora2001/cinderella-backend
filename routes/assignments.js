@@ -184,7 +184,7 @@ router.get('/student/:student_id', verifyToken, async (req, res) => {
 
     // First, get the student's class
     const [student] = await db.query(
-      `SELECT class FROM users WHERE id = ? AND role = 'student'`,
+      `SELECT class_name FROM users WHERE id = ? AND role = 'student'`,
       [student_id]
     );
 
@@ -195,7 +195,7 @@ router.get('/student/:student_id', verifyToken, async (req, res) => {
       });
     }
 
-    const studentClass = student[0].class;
+    const studentClass = student[0].class_name;
 
     if (!studentClass) {
       return res.status(400).json({
@@ -593,5 +593,7 @@ router.get('/', verifyToken, async (req, res) => {
     });
   }
 });
+
+module.exports = router;
 
 module.exports = router;

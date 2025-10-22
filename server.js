@@ -16,12 +16,12 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('uploads')); // Serve uploaded files
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/assignments', assignmentRoutes);
+app.use('/api', authRoutes);              // Auth routes: /api/login, /api/logout, etc.
+app.use('/api/users', userRoutes);        // User routes: /api/users/*
+app.use('/api/assignments', assignmentRoutes); // Assignment routes: /api/assignments/*
 
 // Default route
 app.get('/', (req, res) => {
@@ -31,8 +31,3 @@ app.get('/', (req, res) => {
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
-
-
-
-
-

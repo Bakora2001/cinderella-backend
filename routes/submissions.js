@@ -1,3 +1,4 @@
+// cinderella-backend\routes\submissions.js
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -13,7 +14,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// File upload setup
+// File upload setup for submissions
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -26,50 +27,152 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB file size limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow common file types
+    const allowedTypes = /pdf|doc|docx|txt|jpg|jpeg|png|gif|mp4|avi|mov|wmv|zip|rar/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only documents, images, videos, and archives are allowed.'));
+    }
+  }
 });
 
-// Submit Assignment
+// 📤 Submit Assignment (Student)
 router.post('/submit', verifyToken, upload.single('document'), async (req, res) => {
   try {
+    console.log('Submission request body:', req.body);
+    console.log('Submission file:', req.file);
+
     const { assignmentId, studentId } = req.body;
 
-    if (!assignmentId || !studentId || !req.file) {
+    // Validate required fields
+    if (!assignmentId || !studentId) {
       return res.status(400).json({
         success: false,
-        message: 'Assignment ID, Student ID and document are required'
+        message: 'Assignment ID and Student ID are required'
       });
     }
 
-    const documentPath = `/uploads/submissions/${req.file.filename}`;
+    // Validate file upload
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload a document'
+      });
+    }
 
-    const [result] = await db.query(
-      `INSERT INTO submissions (assignment_id, student_id, document_path, status, submitted_at)
-       VALUES (?, ?, ?, 'submitted', NOW())`,
-      [assignmentId, studentId, documentPath]
+    // Check if assignment exists
+    const [assignment] = await db.query(
+      'SELECT * FROM assignments WHERE id = ?',
+      [assignmentId]
     );
 
-    res.status(201).json({
-      success: true,
-      message: 'Assignment submitted successfully',
-      submission: {
-        id: result.insertId,
-        assignment_id: assignmentId,
-        student_id: studentId,
-        document_path: documentPath
+    if (assignment.length === 0) {
+      // Clean up uploaded file
+      if (req.file) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (err) {
+          console.error('Error deleting file:', err);
+        }
       }
-    });
+      return res.status(404).json({
+        success: false,
+        message: 'Assignment not found'
+      });
+    }
+
+    // Check if student has already submitted
+    const [existingSubmission] = await db.query(
+      'SELECT * FROM submissions WHERE assignment_id = ? AND student_id = ?',
+      [assignmentId, studentId]
+    );
+
+    const documentPath = `/uploads/submissions/${req.file.filename}`;
+
+    if (existingSubmission.length > 0) {
+      // Update existing submission
+      // Delete old file if exists
+      if (existingSubmission[0].document_path) {
+        const oldFilePath = path.join(__dirname, '..', existingSubmission[0].document_path);
+        if (fs.existsSync(oldFilePath)) {
+          try {
+            fs.unlinkSync(oldFilePath);
+          } catch (err) {
+            console.error('Error deleting old file:', err);
+          }
+        }
+      }
+
+      await db.query(
+        `UPDATE submissions 
+         SET document_path = ?, submitted_at = NOW(), status = 'submitted', updated_at = NOW()
+         WHERE id = ?`,
+        [documentPath, existingSubmission[0].id]
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Assignment resubmitted successfully',
+        submission: {
+          id: existingSubmission[0].id,
+          assignment_id: assignmentId,
+          student_id: studentId,
+          document_path: documentPath,
+          status: 'submitted',
+          submitted_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+    } else {
+      // Create new submission
+      const [result] = await db.query(
+        `INSERT INTO submissions (assignment_id, student_id, document_path, status, submitted_at, created_at, updated_at)
+         VALUES (?, ?, ?, 'submitted', NOW(), NOW(), NOW())`,
+        [assignmentId, studentId, documentPath]
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Assignment submitted successfully',
+        submission: {
+          id: result.insertId,
+          assignment_id: assignmentId,
+          student_id: studentId,
+          document_path: documentPath,
+          status: 'submitted',
+          submitted_at: new Date(),
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+    }
   } catch (error) {
-    console.error('Error submitting assignment:', error);
+    console.error('Error submitting assignment:', error.message, error.stack);
+    
+    // Clean up uploaded file if submission fails
+    if (req.file) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting file:', unlinkError);
+      }
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Server error while submitting assignment',
       error: error.message
     });
   }
 });
-
-module.exports = router;
 
 // 📚 Get All Submissions for a Student
 router.get('/student/:student_id', verifyToken, async (req, res) => {
