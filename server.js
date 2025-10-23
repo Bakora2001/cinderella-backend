@@ -11,7 +11,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const assignmentRoutes = require('./routes/assignments');
 const chatbotRoutes = require('./routes/chatbot-free'); // Use free version
-
+const submissionsRoutes = require('./routes/submissions');
 
 
 dotenv.config();
@@ -27,6 +27,7 @@ app.use('/api', authRoutes);              // Auth routes: /api/login, /api/logou
 app.use('/api/users', userRoutes);        // User routes: /api/users/*
 app.use('/api/assignments', assignmentRoutes); // Assignment routes: /api/assignments/*
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/submissions', submissionsRoutes);
 
 // Default route
 app.get('/', (req, res) => {
