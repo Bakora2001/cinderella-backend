@@ -9,18 +9,36 @@ if (!global.activeUsers) {
   global.activeUsers = [];
 }
 
+// FIXED: Verify Token Middleware
 const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
+  const authHeader = req.headers['authorization'];
+  
+  if (!authHeader) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'No authorization header provided' 
+    });
   }
+
+  const token = authHeader.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'No token provided' 
+    });
+  }
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    req.user = decoded; // Attaches user info (id, email, role, username) to req
+    req.user = decoded;
     next();
   } catch (error) {
     console.error('Token verification error:', error.message);
-    res.status(403).json({ success: false, message: 'Invalid token' });
+    return res.status(403).json({ 
+      success: false, 
+      message: 'Invalid or expired token' 
+    });
   }
 };
 
@@ -33,7 +51,7 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email and passwords is needed' 
+        message: 'Email and password are required' 
       });
     }
 
@@ -70,11 +88,10 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Add user to active users list (if not already present)
+    // Add user to active users list
     const existingUserIndex = global.activeUsers.findIndex(u => u.id === user.id);
     
     if (existingUserIndex === -1) {
-      // User not in active list, add them
       global.activeUsers.push({
         id: user.id,
         email: user.email,
@@ -84,7 +101,6 @@ router.post('/login', async (req, res) => {
         token
       });
     } else {
-      // User already in active list, update their info
       global.activeUsers[existingUserIndex] = {
         ...global.activeUsers[existingUserIndex],
         loginTime: new Date(),
@@ -92,7 +108,7 @@ router.post('/login', async (req, res) => {
       };
     }
 
-    console.log(`User logged in: ${user.email} (${user.role})`);
+    console.log(`✅ User logged in: ${user.email} (${user.role})`);
     console.log(`Active users count: ${global.activeUsers.length}`);
 
     // Send success response
@@ -105,12 +121,14 @@ router.post('/login', async (req, res) => {
         email: user.email, 
         username: user.username,
         role: user.role,
-        class_name: user.class_name || null
+        class_name: user.class_name || null,
+        firstname: user.firstname || null,
+        sirname: user.sirname || null
       }
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Server error during login',
@@ -155,7 +173,6 @@ router.post('/logout', (req, res) => {
       });
     }
 
-    // Remove user from active users list
     const initialLength = global.activeUsers.length;
     global.activeUsers = global.activeUsers.filter(user => user.id !== id);
     
@@ -185,15 +202,13 @@ router.post('/newacc', async (req, res) => {
   try {
     const { username, email, password, role, class_name } = req.body;
 
-    // Validate required input fields
     if (!username || !email || !password || !role) {
       return res.status(400).json({
         success: false,
-        message: "Username, email, password, and role are required fields",
+        message: "Username, email, password, and role are required",
       });
     }
 
-    // Validate role
     const validRoles = ['admin', 'teacher', 'student'];
     if (!validRoles.includes(role.toLowerCase())) {
       return res.status(400).json({
@@ -202,7 +217,6 @@ router.post('/newacc', async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const [existing] = await db.query(
       'SELECT * FROM users WHERE email = ?', 
       [email]
@@ -211,14 +225,12 @@ router.post('/newacc', async (req, res) => {
     if (existing.length > 0) {
       return res.status(400).json({
         success: false,
-        message: "User with the email already exists. Please use another email.",
+        message: "User with this email already exists",
       });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user into database
     const insertQuery = `
       INSERT INTO users (username, email, password, role, class_name)
       VALUES (?, ?, ?, ?, ?)
@@ -234,10 +246,9 @@ router.post('/newacc', async (req, res) => {
 
     console.log(`New user created: ${username} (${role}) - ID: ${result.insertId}`);
 
-    // Send success response
     return res.status(201).json({
       success: true,
-      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account for ${username} created successfully`,
+      message: `Account created successfully`,
       user: {
         id: result.insertId,
         username,
@@ -257,7 +268,7 @@ router.post('/newacc', async (req, res) => {
   }
 });
 
-// Get All Users API (Optional - for admin dashboard)
+// Get All Users API
 router.get('/users', async (req, res) => {
   try {
     const [users] = await db.query(
@@ -280,7 +291,7 @@ router.get('/users', async (req, res) => {
   }
 });
 
-// Get User by ID API (Optional)
+// Get User by ID API
 router.get('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -312,5 +323,6 @@ router.get('/users/:id', async (req, res) => {
   }
 });
 
+// Export router and verifyToken
 module.exports = router;
-router.verifyToken = verifyToken; 
+module.exports.verifyToken = verifyToken;

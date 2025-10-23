@@ -1,3 +1,4 @@
+// cinderella-backend\server.js
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -9,6 +10,9 @@ const jwt = require('jsonwebtoken');
 const authRoutes = require('./routes/auth'); 
 const userRoutes = require('./routes/users');
 const assignmentRoutes = require('./routes/assignments');
+const chatbotRoutes = require('./routes/chatbot-free'); // Use free version
+
+
 
 dotenv.config();
 const app = express();
@@ -22,6 +26,7 @@ app.use('/uploads', express.static('uploads')); // Serve uploaded files
 app.use('/api', authRoutes);              // Auth routes: /api/login, /api/logout, etc.
 app.use('/api/users', userRoutes);        // User routes: /api/users/*
 app.use('/api/assignments', assignmentRoutes); // Assignment routes: /api/assignments/*
+app.use('/api/chatbot', chatbotRoutes);
 
 // Default route
 app.get('/', (req, res) => {
