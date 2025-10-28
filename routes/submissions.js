@@ -136,8 +136,7 @@ router.get('/teacher/:teacher_id/submissions', verifyToken, async (req, res) => 
         a.description as assignment_description,
         a.class_name as assignment_class,
         a.due_date,
-        u.firstname,
-        u.sirname,
+        u.username,
         u.email,
         u.class_name as student_class
       FROM submissions s
