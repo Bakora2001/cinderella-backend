@@ -27,35 +27,12 @@ const assignmentRoutes = require('./routes/assignments');
 const chatbotRoutes = require('./routes/chatbot-free'); // Use free version
 const submissionsRoutes = require('./routes/submissions');
 
-console.log('✅ All route files imported successfully');
-
 // Routes
-app.use('/api', authRoutes);              // Auth routes: /api/login, /api/logout, etc.
-app.use('/api/users', userRoutes);        // User routes: /api/users/*
-app.use('/api/assignments', assignmentRoutes); // Assignment routes: /api/assignments/*
-app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/users', userRoutes);        // FIRST: /api/users/*
+app.use('/api/assignments', assignmentRoutes);
 app.use('/api/submissions', submissionsRoutes);
-
-console.log('✅ All routes mounted');
-console.log('📍 Submissions routes available at: /api/submissions/*');
-
-// Test endpoint to verify submissions routes
-app.get('/api/test-submissions', (req, res) => {
-  res.json({ 
-    message: 'Submissions routes are working!',
-    availableRoutes: [
-      'POST /api/submissions/submit',
-      'GET /api/submissions/teacher/:teacher_id/submissions',
-      'GET /api/submissions/download/:submission_id',
-      'GET /api/submissions/student/:student_id',
-      'GET /api/submissions/assignment/:assignment_id',
-      'GET /api/submissions/:submission_id',
-      'PUT /api/submissions/:submission_id/grade',
-      'PUT /api/submissions/:submission_id/status',
-      'DELETE /api/submissions/:submission_id'
-    ]
-  });
-});
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api', authRoutes); 
 
 // Default route
 app.get('/', (req, res) => {
@@ -64,7 +41,7 @@ app.get('/', (req, res) => {
 
 // 404 handler - should be LAST
 app.use((req, res) => {
-  console.log('❌ 404 - Route not found:', req.method, req.path);
+  // console.log('❌ 404 - Route not found:', req.method, req.path);
   res.status(404).json({ 
     success: false, 
     message: `Route not found: ${req.method} ${req.path}`,
@@ -75,12 +52,12 @@ app.use((req, res) => {
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log('📋 Available route prefixes:');
-  console.log('   - /api (auth routes)');
-  console.log('   - /api/users');
-  console.log('   - /api/assignments');
-  console.log('   - /api/chatbot');
-  console.log('   - /api/submissions');
-  console.log('\n🔍 Test submissions endpoint: http://localhost:' + PORT + '/api/test-submissions');
+  // console.log(`✅ Server running on port ${PORT}`);
+  // console.log('📋 Available route prefixes:');
+  // console.log('   - /api (auth routes)');
+  // console.log('   - /api/users');
+  // console.log('   - /api/assignments');
+  // console.log('   - /api/chatbot');
+  // console.log('   - /api/submissions');
+  // console.log('\n🔍 Test submissions endpoint: http://localhost:' + PORT + '/api/test-submissions');
 });

@@ -108,9 +108,6 @@ router.post('/login', async (req, res) => {
       };
     }
 
-    console.log(`✅ User logged in: ${user.email} (${user.role})`);
-    console.log(`Active users count: ${global.activeUsers.length}`);
-
     // Send success response
     res.status(200).json({
       success: true,
@@ -177,9 +174,6 @@ router.post('/logout', (req, res) => {
     global.activeUsers = global.activeUsers.filter(user => user.id !== id);
     
     const wasRemoved = global.activeUsers.length < initialLength;
-
-    console.log(`User logged out: ${id}`);
-    console.log(`Active users count: ${global.activeUsers.length}`);
 
     res.status(200).json({ 
       success: true, 

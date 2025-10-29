@@ -47,9 +47,7 @@ const upload = multer({
 // 📘 Create New Assignment
 router.post('/new', verifyToken, upload.single('document'), async (req, res) => {
   try {
-    console.log('Request body:', req.body); 
-    console.log('File:', req.file); 
-
+   
     const { teacherId, title, description, instructions, class_name, due_date } = req.body;
     const teacher_id = teacherId;
 
@@ -596,4 +594,4 @@ router.get('/', verifyToken, async (req, res) => {
 
 module.exports = router;
 
-module.exports = router;
+// module.exports = router;

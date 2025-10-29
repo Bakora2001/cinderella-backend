@@ -1,17 +1,21 @@
 const express = require('express');
-const router = express.Router();
 const db = require('../config/db');
-const app = express();
+const router = express.Router();
 
 // GET all users
 router.get('/getallusers', async (req, res) => {
+  
   try {
+    
     // Fetch all users from MySQL
     const [rows] = await db.query(
       'SELECT id, username, email, role, class_name FROM users ORDER BY id DESC'
     );
 
+    console.log('get all users was successful, rows found:', rows.length);
+
     if (rows.length === 0) {
+      console.log('get all users found nothing in database');
       return res.status(404).json({ success: false, message: 'No users found' });
     }
 
@@ -23,10 +27,15 @@ router.get('/getallusers', async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching users:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      sqlMessage: error.sqlMessage
+    });
     res.status(500).json({
       success: false,
       message: 'Server error while fetching users',
-      error
+      error: error.message
     });
   }
 });
