@@ -26,7 +26,7 @@ router.get('/conversations/:userId', async (req, res) => {
 
     res.json({ success: true, conversations });
   } catch (error) {
-    console.error('Error fetching conversations:', error);
+    console.error('Error fetching conversation:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
